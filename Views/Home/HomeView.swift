@@ -7,6 +7,7 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
+                    ThemedHeader("Home")
                     toyHeader
                     toyIllustration
                     connectButton
@@ -14,23 +15,22 @@ struct HomeView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Home")
-            .background(
-                LinearGradient(colors: [.black, .purple.opacity(0.25)], startPoint: .top, endPoint: .bottom)
-                    .ignoresSafeArea()
-            )
+            .themedRootScreen("Home")
+            .themedBackground()
         }
     }
+
+    private var pack: ThemePack { ThemeStore.shared.current }
 
     private var toyHeader: some View {
         VStack(spacing: 6) {
             Text(toy.name)
-                .font(.title2.bold())
+                .font(pack.style.titleFont(22, pack: pack))
             Button {
                 // stub: present toy picker
             } label: {
                 Label("Switch toys", systemImage: "arrow.left.arrow.right")
-                    .font(.subheadline)
+                    .font(.themed(.subheadline))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 6)
                     .background(.ultraThinMaterial, in: Capsule())
@@ -41,7 +41,9 @@ struct HomeView: View {
     private var toyIllustration: some View {
         Image(systemName: toy.iconSystemName)
             .font(.system(size: 90))
-            .foregroundStyle(.orange.opacity(0.9))
+            .foregroundStyle(pack.highlight.opacity(0.9))
+            .shadow(color: pack.highlight.opacity(0.45), radius: toy.state == .connected ? 24 : 0)
+            .symbolEffect(.pulse, isActive: toy.state == .pairing)
             .frame(height: 140)
     }
 
@@ -54,11 +56,13 @@ struct HomeView: View {
                 Image(systemName: toy.state == .connected ? "checkmark.circle.fill" : "link")
                 Text(connectLabel)
             }
-            .font(.subheadline.weight(.medium))
+            .font(.themed(.subheadline).weight(.medium))
+            .foregroundStyle(toy.state == .connected ? pack.accent : .primary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            .background(.white.opacity(0.08), in: Capsule())
+            .themedCard(cornerRadius: 28)
         }
+        .buttonStyle(.plain)
     }
 
     private var connectLabel: String {
@@ -75,6 +79,7 @@ struct HomeView: View {
                 NavigationLink(value: mode) {
                     ModeTile(mode: mode)
                 }
+                .buttonStyle(.plain)
             }
         }
         .navigationDestination(for: ControlMode.self) { mode in
@@ -87,20 +92,21 @@ struct ModeTile: View {
     let mode: ControlMode
 
     var body: some View {
+        let pack = ThemeStore.shared.current
         VStack(alignment: .leading, spacing: 10) {
             Image(systemName: mode.iconSystemName)
                 .font(.title2)
-                .foregroundStyle(.purple)
+                .foregroundStyle(pack.accent)
             Text(mode.rawValue)
-                .font(.headline)
+                .font(.themed(.headline))
             Text(mode.subtitle)
-                .font(.caption)
+                .font(.themed(.caption))
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .frame(height: 110)
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16))
+        .themedCard(cornerRadius: 16)
     }
 }
 
@@ -108,25 +114,33 @@ struct ModeDetailView: View {
     let mode: ControlMode
 
     var body: some View {
+        let pack = ThemeStore.shared.current
         VStack(spacing: 16) {
-            Image(systemName: mode.iconSystemName)
-                .font(.system(size: 50))
-                .foregroundStyle(.purple)
-            Text(mode.rawValue)
-                .font(.title.bold())
-            Text(mode.subtitle)
-                .foregroundStyle(.secondary)
+            VStack(spacing: 10) {
+                Image(systemName: mode.iconSystemName)
+                    .font(.system(size: 50))
+                Text(mode.rawValue)
+                    .font(pack.style.titleFont(28, pack: pack))
+                Text(mode.subtitle)
+                    .font(.themed(.subheadline))
+                    .opacity(0.8)
+            }
+            .foregroundStyle(pack.headerText)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 28)
+            .background(pack.headerGradient, in: RoundedRectangle(cornerRadius: CGFloat(pack.headerCornerRadius ?? 14)))
             Spacer()
             Text("Placeholder — wire up \(mode.rawValue) logic here.")
-                .font(.footnote)
+                .font(.themed(.footnote))
                 .foregroundStyle(.tertiary)
                 .padding(.bottom, 40)
         }
         .padding()
-        .navigationTitle(mode.rawValue)
+        .themedInlineTitle(mode.rawValue)
+        .themedBackground()
     }
 }
 
 #Preview {
-    HomeView().preferredColorScheme(.dark)
+    HomeView()
 }
