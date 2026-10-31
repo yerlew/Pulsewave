@@ -7,31 +7,35 @@ struct ProfileView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
+                    ThemedHeader("Me")
                     avatar
                     identity
                     statsRow
                     levelCard
                     quickLinks
+                    themeLink
                     featuresGrid
                 }
                 .padding()
             }
-            .navigationTitle("Me")
-            .background(Color.black.ignoresSafeArea())
+            .themedRootScreen("Me")
+            .themedBackground()
         }
     }
+
+    private var pack: ThemePack { ThemeStore.shared.current }
 
     private var avatar: some View {
         Image(systemName: "person.crop.circle.fill")
             .font(.system(size: 90))
-            .foregroundStyle(.purple)
+            .foregroundStyle(pack.accent)
     }
 
     private var identity: some View {
         VStack(spacing: 4) {
-            Text(profile.username).font(.title2.bold())
+            Text(profile.username).font(pack.style.titleFont(22, pack: pack))
             Text("ID \(profile.memberId)")
-                .font(.caption)
+                .font(.themed(.caption))
                 .foregroundStyle(.secondary)
         }
     }
@@ -48,8 +52,8 @@ struct ProfileView: View {
 
     private func statItem(_ label: String, _ value: Int) -> some View {
         VStack(spacing: 2) {
-            Text("\(value)").font(.headline)
-            Text(label).font(.caption).foregroundStyle(.secondary)
+            Text("\(value)").font(.themed(.headline))
+            Text(label).font(.themed(.caption)).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
     }
@@ -61,13 +65,23 @@ struct ProfileView: View {
                 Spacer()
                 Text("LV\(profile.level)").bold()
             }
-            ProgressView(value: Double(profile.levelProgress), total: Double(profile.levelCap))
-            Text("\(profile.levelProgress)/\(profile.levelCap)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            .font(.themed(.headline))
+            .foregroundStyle(pack.headerText)
+            .padding(.horizontal)
+            .padding(.vertical, 10)
+            .background(pack.headerGradient)
+
+            VStack(alignment: .leading, spacing: 6) {
+                ProgressView(value: Double(profile.levelProgress), total: Double(profile.levelCap))
+                    .tint(pack.highlight)
+                Text("\(profile.levelProgress)/\(profile.levelCap)")
+                    .font(.themed(.caption))
+                    .foregroundStyle(.secondary)
+            }
+            .padding([.horizontal, .bottom])
         }
-        .padding()
-        .background(.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: 14))
+        .themedCard()
+        .clipShape(RoundedRectangle(cornerRadius: CGFloat(pack.headerCornerRadius ?? 14)))
     }
 
     private var quickLinks: some View {
@@ -79,12 +93,35 @@ struct ProfileView: View {
 
     private func quickLinkTile(_ title: String, _ icon: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: icon).foregroundStyle(.purple)
-            Text(title).font(.subheadline.weight(.medium))
+            Image(systemName: icon).foregroundStyle(pack.accent)
+            Text(title).font(.themed(.subheadline).weight(.medium))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
+        .themedCard()
+    }
+
+    /// Entry to the pack picker, showing the equipped pack's colors.
+    private var themeLink: some View {
+        NavigationLink {
+            ThemePacksView()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "paintpalette.fill").foregroundStyle(pack.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Theme Packs").font(.themed(.subheadline).weight(.medium))
+                    Text(pack.name).font(.themed(.caption)).foregroundStyle(.secondary)
+                }
+                Spacer()
+                PackSwatches(pack: pack)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding()
+            .themedCard()
+        }
+        .buttonStyle(.plain)
     }
 
     private var featuresGrid: some View {
@@ -98,17 +135,34 @@ struct ProfileView: View {
             ForEach(items, id: \.0) { item in
                 VStack(spacing: 6) {
                     Image(systemName: item.1)
-                    Text(item.0).font(.caption2)
+                    Text(item.0).font(.themed(.caption2))
                 }
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
             }
         }
         .padding()
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
+        .themedCard()
+    }
+}
+
+/// Small overlapping dots of a pack's key colors.
+struct PackSwatches: View {
+    let pack: ThemePack
+
+    var body: some View {
+        HStack(spacing: -6) {
+            ForEach([\ThemePack.Palette.backgroundTop, \.backgroundBottom, \.highlight, \.accent], id: \.self) { key in
+                Circle()
+                    .fill(pack.color(key))
+                    .overlay(Circle().stroke(.white, lineWidth: 1.5))
+                    .frame(width: 18, height: 18)
+            }
+        }
+        .accessibilityHidden(true)
     }
 }
 
 #Preview {
-    ProfileView().preferredColorScheme(.dark)
+    ProfileView()
 }
